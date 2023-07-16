@@ -158,6 +158,17 @@ export class AsyncResult<T, E> {
         });
     }
 
+    /** Filters an element if the condition doesn't match to the specified error */
+    filter(f: (value: T) => boolean, error: E): AsyncResult<T, E> {
+        return this.and_then((value)  => {
+            if (f(value)) {
+                return AsyncResult.ok(value);
+            } else {
+                return AsyncResult.error(error);
+            }
+        });
+    }
+
     /** Consumes the async result, exposing the underlying promise */
     to_promise(): typeof this.promise {
         return this.promise;

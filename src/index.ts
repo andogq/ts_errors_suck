@@ -24,7 +24,7 @@ async function login(username: string, password: string): Promise<{[key: string]
 
 async function main() {
     // Generic required here, to enforce what the error type will be (would be awesome to get rid of the initial data type)
-    new AsyncResult<{[key: string]: any}, ZodError<User>>(login("admin", "admdin"))
+    new AsyncResult<{[key: string]: any}, ZodError<User>>(login("admin", "admin"))
         .and_then((response) => new AsyncResult(User.parseAsync(response)))
         .tap((user) => console.log(user))
 
@@ -37,15 +37,11 @@ async function main() {
         })
 
         // Return type required here, in order to help TS with the branch, since it can't infer types for shit
-        .and_then((user): AsyncResult<typeof user, string> => {
+        .tap((user) => {
             console.log(`Successfully logged in ${user.username} (${user.user_id})`);
-
-            if (user.admin) {
-                return AsyncResult.ok(user);
-            } else {
-                return AsyncResult.error("user is not an admin");
-            }
         })
+
+        .filter((user) => user.admin, "user is not an admin")
 
         .map((user) => user.username)
 
