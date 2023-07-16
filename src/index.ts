@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { ZodError, z } from "zod";
 import { AsyncResult } from "./lib";
 
 const User = z.object({
@@ -24,18 +24,18 @@ async function login(username: string, password: string): Promise<{[key: string]
 
 async function main() {
     // Generic required here, to enforce what the error type will be (would be awesome to get rid of the initial data type)
-    new AsyncResult<{[key: string]: any}, string>(login("admin", "admin"))
+    new AsyncResult<{[key: string]: any}, ZodError<User>>(login("admin", "admin"))
 
         .and_then((response) => new AsyncResult(User.parseAsync(response)))
 
-        .or_else((error) => {
+        .map_error((error) => {
             console.error("An error occurred whilst parsing data");
             console.error(error);
-            return AsyncResult.error("parse error");
+            return "zod parse error";
         })
 
         // Return type required here, in order to help TS with the branch, since it can't infer types for shit
-        .and_then((user): AsyncResult<typeof user, string>  => {
+        .and_then((user): AsyncResult<typeof user, string> => {
             console.log(`Successfully logged in ${user.username} (${user.user_id})`);
 
             if (user.admin) {

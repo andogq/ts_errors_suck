@@ -37,12 +37,14 @@ export class AsyncResult<T, E> {
     private promise: Promise<Result<T, E>>;
 
     /** Converts a regular promise to a `Result`-ified promise */
-    constructor(p: Promise<AsyncResult<T, E> | T>) {
+    constructor(p: Promise<AsyncResult<T, E> | Result<T, E> | T>) {
         this.promise = p
             .then((value) => {
                 if (value instanceof AsyncResult) {
                     // Will resolve to Result<T, E>
                     return value.promise;
+                } else if (value instanceof Result) {
+                    return Promise.resolve(value);
                 } else {
                     // Is Result<T, E>
                     return Promise.resolve(Result.ok<T, E>(value));
@@ -87,6 +89,21 @@ export class AsyncResult<T, E> {
                 }
             })
         )
+    }
+
+    map_error<E2>(f: (error: E) => E2): AsyncResult<T, E2> {
+        return new AsyncResult<T, E2>(
+            this.promise.then((result: Result<T, E>): Result<T, E2> => {
+                if (result.is_error()) {
+                    return Result.error(f(result.result.error));
+                } else if (result.is_ok()){
+                    return Result.ok(result.result.value);
+                } else {
+                    // Should not be possible to be here, AsyncResult should be Ok or Error
+                    throw new Error("malformed async result");
+                }
+            })
+        );
     }
 
     /** Consumes the async result, exposing the underlying promise */
