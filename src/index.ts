@@ -24,13 +24,15 @@ async function login(username: string, password: string): Promise<{[key: string]
 
 async function main() {
     // Generic required here, to enforce what the error type will be (would be awesome to get rid of the initial data type)
-    new AsyncResult<{[key: string]: any}, ZodError<User>>(login("admin", "admin"))
-
+    new AsyncResult<{[key: string]: any}, ZodError<User>>(login("admin", "admdin"))
         .and_then((response) => new AsyncResult(User.parseAsync(response)))
+        .tap((user) => console.log(user))
 
-        .map_error((error) => {
+        .tap_error((error) => {
             console.error("An error occurred whilst parsing data");
             console.error(error);
+        })
+        .map_error(() => {
             return "zod parse error";
         })
 

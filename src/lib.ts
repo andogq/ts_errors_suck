@@ -127,6 +127,37 @@ export class AsyncResult<T, E> {
         );
     }
 
+    /** Taps a result, to inspect it */
+    tap_any(f: (result: Result<T, E>) => void): AsyncResult<T, E> {
+        this.promise = this.promise.then((result) => {
+            f(result);
+
+            return result;
+        });
+
+        return this;
+    }
+
+    /** Taps a value, to inspect it
+     * Like a map when the original value is returned unmodified
+     */
+    tap(f: (value: T) => void): AsyncResult<T, E> {
+        return this.tap_any((result) => {
+            if (result.is_ok()) {
+                f(result.result.value);
+            }
+        });
+    }
+
+    /** Taps an error, to inspect it */
+    tap_error(f: (value: E) => void): AsyncResult<T, E> {
+        return this.tap_any((result) => {
+            if (result.is_error()) {
+                f(result.result.error);
+            }
+        });
+    }
+
     /** Consumes the async result, exposing the underlying promise */
     to_promise(): typeof this.promise {
         return this.promise;
