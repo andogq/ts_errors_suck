@@ -2,11 +2,7 @@ export type ResultOk<T> = { value: T };
 export type ResultError<E> = { error: E };
 
 export class Result<T, E> {
-    result: ResultOk<T> | ResultError<E>;
-
-    constructor(result:  ResultOk<T> | ResultError<E>) {
-        this.result = result;
-    }
+    constructor(public result:  ResultOk<T> | ResultError<E>) { }
 
     break_result(): T {
         if (this.is_ok()) {

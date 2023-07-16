@@ -1,41 +1,59 @@
+import { z } from "zod";
 import { AsyncResult } from "./lib";
 
-function test_function(success: boolean): Promise<string> {
-    if (success) {
-        return Promise.resolve("h");
+const User = z.object({
+    username: z.string(),
+    user_id: z.number(),
+    admin: z.boolean(),
+});
+type User = z.infer<typeof User>;
+
+async function login(username: string, password: string): Promise<{[key: string]: any}> {
+    if (username === password) {
+        return {
+            username,
+            user_id: username.length,
+            admin: username === "admin",
+        };
     } else {
-        return Promise.reject(10);
+        return {
+            valid: false,
+        }
     }
 }
 
-// Original error type must be specified here, so it can propagate through
-let a = new AsyncResult<string, Error>(test_function(true))
-    .and_then((value) => {
-        console.log("The value is", value);
-        return AsyncResult.ok([value, value].join(", "));
-    })
-    .and_then((s) => {
-        return AsyncResult.ok(s.length);
-    })
-    .and_then((length) => {
-        if (length >= 10) {
-            return AsyncResult.ok("good length");
-        } else {
-            return AsyncResult.error(new Error("thing is too short"));
-        }
-    })
-    .and_then((value) => {
-        console.log("This shouldn't run");
-        return AsyncResult.ok(value);
-    })
-    .or_else((e) => {
-        console.log("Found error, providing default:", e.message);
+async function main() {
+    // Generic required here, to enforce what the error type will be (would be awesome to get rid of the initial data type)
+    new AsyncResult<{[key: string]: any}, string>(login("admin", "admin"))
 
-        return AsyncResult.ok("default value");
-    })
-    .to_promise()
-    .then((result) => {
-        
-        console.log(result)
-    });
+        .and_then((response) => new AsyncResult(User.parseAsync(response)))
 
+        .or_else((error) => {
+            console.error("An error occurred whilst parsing data");
+            console.error(error);
+            return AsyncResult.error("parse error");
+        })
+
+        // Return type required here, in order to help TS with the branch, since it can't infer types for shit
+        .and_then((user): AsyncResult<typeof user, string>  => {
+            console.log(`Successfully logged in ${user.username} (${user.user_id})`);
+
+            if (user.admin) {
+                return AsyncResult.ok(user);
+            } else {
+                return AsyncResult.error("user is not an admin");
+            }
+        })
+
+        .and_then((admin_user) => {
+            console.log(`Welcome to the admin zone, ${admin_user.username}`);
+            return AsyncResult.ok(admin_user);
+        })
+
+        .or_else((error) => {
+            console.log("User was not an admin");
+            return AsyncResult.error(error);
+        })
+}
+
+main();
