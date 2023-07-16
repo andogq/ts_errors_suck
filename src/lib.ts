@@ -91,6 +91,27 @@ export class AsyncResult<T, E> {
         )
     }
 
+    /** Maps a value to a new value
+     * Useful if there is no chance of an error being produced.
+     */
+    map<T2>(f: (value: T) => T2): AsyncResult<T2, E> {
+        return new AsyncResult<T2, E>(
+            this.promise.then((result) => {
+                if (result.is_ok()) {
+                    return Result.ok(f(result.result.value));
+                } else if (result.is_error()) {
+                    return Result.error(result.result.error);
+                } else {
+                    // Should not be possible to be here, AsyncResult should be Ok or Error
+                    throw new Error("malformed async result");
+                }
+            })
+        )
+    }
+
+    /** Converts from error type to another
+     * Useful if dealing with errors that are emitted from libraries
+     */
     map_error<E2>(f: (error: E) => E2): AsyncResult<T, E2> {
         return new AsyncResult<T, E2>(
             this.promise.then((result: Result<T, E>): Result<T, E2> => {

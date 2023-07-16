@@ -45,8 +45,10 @@ async function main() {
             }
         })
 
+        .map((user) => user.username)
+
         .and_then((admin_user) => {
-            console.log(`Welcome to the admin zone, ${admin_user.username}`);
+            console.log(`Welcome to the admin zone, ${admin_user}`);
             return AsyncResult.ok(admin_user);
         })
 
